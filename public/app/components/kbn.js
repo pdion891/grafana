@@ -310,6 +310,15 @@ function($, _) {
     };
   };
 
+  // Currency formatter for bitcoin a symbol onto a number. Supports scaling
+  // Bitcoin.
+  kbn.formatBuilders.bitcoin = function(unit, offset) {
+    var prefixes = ['µ', 'm', '', 'K', 'M', 'B', 'T'];
+    prefixes = prefixes.slice(2 + (offset || 0));
+    var units = prefixes.map(function(p) { return ' ' + p + unit; });
+    return kbn.formatBuilders.scaledUnits(1000, units);
+  };
+
   ///// VALUE FORMATS /////
 
   // Dimensionless Units
@@ -331,6 +340,9 @@ function($, _) {
   // Currencies
   kbn.valueFormats.currencyUSD = kbn.formatBuilders.currency('$');
   kbn.valueFormats.currencyGBP = kbn.formatBuilders.currency('£');
+  kbn.valueFormats.currencyBTC = kbn.formatBuilders.bitcoin('BTC');
+  kbn.valueFormats.currencymBTC = kbn.formatBuilders.bitcoin('BTC', -1);
+  kbn.valueFormats.currencyuBTC = kbn.formatBuilders.bitcoin('BTC', -2);
 
   // Data
   kbn.valueFormats.bits   = kbn.formatBuilders.binarySIPrefix('b');
@@ -343,6 +355,7 @@ function($, _) {
   kbn.valueFormats.pps = kbn.formatBuilders.decimalSIPrefix('pps');
   kbn.valueFormats.bps = kbn.formatBuilders.decimalSIPrefix('bps');
   kbn.valueFormats.Bps = kbn.formatBuilders.decimalSIPrefix('Bps');
+  kbn.valueFormats.hps = kbn.formatBuilders.decimalSIPrefix('h/s');
 
   // Energy
   kbn.valueFormats.watt   = kbn.formatBuilders.decimalSIPrefix('W');
@@ -471,6 +484,23 @@ function($, _) {
     }
   };
 
+  kbn.valueFormats.satoshi = function(size, decimals, scaledDecimals) {
+    if (size === null) { return ""; }
+
+    if (Math.abs(size) < 1000) {
+      return kbn.toFixed(size, decimals) + " sBTC";
+    }
+    else if (Math.abs(size) < 1000000) {
+      return kbn.toFixedScaled(size / 100, decimals, scaledDecimals, 3, " µBTC");
+    }
+    else if (Math.abs(size) < 100000000) {
+      return kbn.toFixedScaled(size / 100000, decimals, scaledDecimals, 6, " mBTC");
+    }
+    else {
+      return kbn.toFixedScaled(size / 100000000, decimals, scaledDecimals, 9, " BTC");
+    }
+  };
+
   ///// FORMAT MENU /////
 
   kbn.getUnitFormats = function() {
@@ -492,6 +522,10 @@ function($, _) {
         submenu: [
           {text: 'Dollars ($)', value: 'currencyUSD'},
           {text: 'Pounds (£)',  value: 'currencyGBP'},
+          {text: 'Bitcoin (BTC)',  value: 'currencyBTC'},
+          {text: 'milli-Bitcoin (mBTC)',  value: 'currencymBTC'},
+          {text: 'micro-Bitcoin (µBTC)',  value: 'currencyuBTC'},
+          {text: 'satoshi (sBTC)',  value: 'satoshi'},
         ]
       },
       {
@@ -520,6 +554,7 @@ function($, _) {
           {text: 'packets/sec', value: 'pps'},
           {text: 'bits/sec',    value: 'bps'},
           {text: 'bytes/sec',   value: 'Bps'},
+          {text: 'hash/sec',    value: 'hps'},
         ]
       },
       {
